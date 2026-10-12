@@ -1,0 +1,30 @@
+{$DOMAIN} {
+	{$TLS_DIRECTIVE}
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		-Server
+		-X-Powered-By
+	}
+
+	request_body {
+		max_size 25MB
+	}
+
+	@api path /api/* /swagger-ui /swagger-ui/* /v3/api-docs /v3/api-docs/*
+	handle @api {
+		reverse_proxy app:8080
+	}
+
+	handle /mcp {
+		reverse_proxy mcp:3333
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

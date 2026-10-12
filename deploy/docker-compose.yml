@@ -1,0 +1,112 @@
+name: taskboard
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-build-certs: &certs
+  certs: ./certs
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: taskboard
+      POSTGRES_USER: taskboard
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskboard -d taskboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 512m
+    logging: *logging
+
+  app:
+    build:
+      context: ../backend
+      additional_contexts: *certs
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/taskboard
+      DB_USER: taskboard
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?defina APP_JWT_SECRET no .env}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
+      APP_PUBLIC_URL: ${PUBLIC_URL:-https://${DOMAIN}}
+      APP_OIDC_ISSUER: ${OIDC_ISSUER:-}
+      APP_OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-taskboard}
+      APP_OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      APP_OIDC_LABEL: ${OIDC_LABEL:-Keycloak}
+      APP_TIME_ZONE: ${TIME_ZONE:-America/Sao_Paulo}
+      APP_MAX_UPLOAD: ${MAX_UPLOAD:-20MB}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SSL: ${MAIL_SSL:-false}
+      MAIL_FROM: ${MAIL_FROM:-taskboard@localhost}
+    volumes:
+      - files:/data/files
+    mem_limit: 768m
+    logging: *logging
+
+  web:
+    build:
+      context: ../frontend
+      additional_contexts: *certs
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      NUXT_API_INTERNAL: http://app:8080
+    mem_limit: 256m
+    logging: *logging
+
+  mcp:
+    profiles: ["mcp"]
+    build:
+      context: ../mcp
+      additional_contexts: *certs
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      TASKBOARD_URL: http://app:8080
+    mem_limit: 128m
+    logging: *logging
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+      - web
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
+      TLS_DIRECTIVE: ${TLS_DIRECTIVE:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 128m
+    logging: *logging
+
+volumes:
+  db-data:
+  files:
+  caddy-data:
+  caddy-config:
