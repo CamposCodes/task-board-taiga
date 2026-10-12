@@ -1,7 +1,6 @@
 import type { Choice, Item, Kind, Notice } from '~/utils/types'
 
 const ZONE = 'America/Sao_Paulo'
-const dateFormat = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' })
 const longDateFormat = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })
 const dateTimeFormat = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -14,10 +13,6 @@ const dateTimeFormat = new Intl.DateTimeFormat('pt-BR', {
 const relativeFormat = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'always' })
 
 const tidy = (text: string) => text.replace(/\./g, '').replace(/ de /g, ' ').replace(',', '')
-
-export function formatDate(isoDate: string | null | undefined): string {
-  return isoDate ? dateFormat.format(new Date(isoDate + 'T00:00:00Z')) : ''
-}
 
 export function formatDay(isoDate: string | null | undefined): string {
   return isoDate ? tidy(longDateFormat.format(new Date(isoDate + 'T00:00:00Z'))) : ''
