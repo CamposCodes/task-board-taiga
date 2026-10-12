@@ -1,0 +1,34 @@
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Backend
+backend/build/
+backend/.gradle/
+backend/out/
+
+# Frontend / MCP
+node_modules/
+.nuxt/
+.output/
+dist/
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Local machine files
+.local/
+
+# Extra CA certificates used only while building images
+deploy/certs/*.crt
+
+# Local backups and deploy secrets
+deploy/backups/
+backend/data/
+data/
